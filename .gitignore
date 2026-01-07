@@ -1,0 +1,9 @@
+# Binaries
+/bin/
+/bin/platformctl
+HANDOFF.md
+
+# OS/editor noise
+.DS_Store
+*.swp
+*.swo
