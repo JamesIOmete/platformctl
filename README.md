@@ -56,7 +56,7 @@ If missing, commands still run in unauthenticated mode.
 
 Example YAML:
 ```yaml
-principal: jward448
+principal: demo-user
 scopes:
   - fleet:read
   - infra:write
