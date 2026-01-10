@@ -6,7 +6,8 @@ import (
 	"github.com/JamesIOmete/platformctl/internal/auth"
 	"github.com/JamesIOmete/platformctl/internal/doctor"
 	"github.com/JamesIOmete/platformctl/internal/env"
-	"github.com/JamesIOmete/platformctl/internal/fleet"
+
+
 	"github.com/JamesIOmete/platformctl/internal/output"
 	"github.com/JamesIOmete/platformctl/internal/plugin"
 	"github.com/JamesIOmete/platformctl/internal/version"
@@ -34,6 +35,11 @@ func Run(args []string) int {
 		return handleAuth(args[1:])
 	case "fleet":
 		return handleFleet(args[1:])
+
+	case "secrets":
+		return handleSecrets(args[1:])
+	case "init":
+		return handleInit(args[1:])
 	case "env":
 		return handleEnv(args[1:])
 	default:
@@ -60,24 +66,7 @@ func handleAuth(args []string) int {
 	return 0
 }
 
-func handleFleet(args []string) int {
-	if len(args) == 0 || args[0] == "help" {
-		fmt.Println("Usage: platformctl fleet ls")
-		return 0
-	}
-	if args[0] != "ls" {
-		output.PrintError("Unknown fleet subcommand. Try: platformctl fleet ls")
-		return 1
-	}
-	status := auth.LoadStatus()
-	if !auth.HasScope(status, "fleet:read") {
-		output.PrintError("Access denied: missing scope fleet:read. See platformctl auth status.")
-		return 1
-	}
-	devices := fleet.ListDevices()
-	fmt.Print(fleet.FormatDevices(devices))
-	return 0
-}
+
 
 func handleEnv(args []string) int {
 	if len(args) == 0 || args[0] == "help" {

@@ -1,116 +1,124 @@
-# platformctl
+# platformctl (V2)
 
-**platformctl** is a proof-of-concept internal CLI written in Go that demonstrates how a
-company-wide developer platform tool could provide secure, extensible, self-service workflows
-for engineers working with infrastructure, identity, and connected device fleets.
+**platformctl** is a proof-of-concept internal CLI demonstrating a scalable, decentralized platform engineering toolchain.
+It functionality simulates a Robotics Fleet Management system with a focus on developer experience (DX), plugin extensibility, and secure self-service workflows.
 
-This project is intentionally scoped as a **platform engineering POC**, not a production system.
-
----
-
-## What This Is
-
-- A **single-entry CLI** for internal workflows
-- A **framework** for building internal tools
-- A demonstration of **developer experience design**
-- A model for **secure-by-default self-service**
+> **Status**: v1.1.0-dev (POC)
 
 ---
 
-## What This Is Not
+## Architecture
 
-- A real IAM system
-- A real infrastructure automation tool
-- A robot control system
-- A complete internal platform
+This project demonstrates a **Hub-and-Spoke** CLI architecture designed for organizational scale:
 
-Mocks and stubs are intentional.
+1.  **Core Binary (`platformctl`)**:
+    -   Handles Identity (`auth`) and Onboarding (`init`).
+    -   Manages local secrets (`secrets`).
+    -   Provides standardized libraries for standardized output and config.
+    -   Dispatches subcommands to plugins.
+
+2.  **Decoupled Plugins (`platformctl-sim`)**:
+    -   The Simulation capability is a **standalone binary**.
+    -   This proves how distinct teams (e.g., "Sim Team") can release updates independently of the "Platform Team".
+    -   The core CLI discovers plugins via the system `$PATH`.
+
+3.  **Mocked Backend**:
+    -   State is persisted locally in `~/.config/platformctl/mock-state.json` to simulate real API interactions.
 
 ---
 
-## Example Usage
+## Installation
+
+### Prerequisites
+-   Linux / WSL / macOS
+-   `go` 1.22+ (for building)
+
+### System Install (Recommended)
+This installs binaries to `/usr/local/bin`, ensuring plugins are discoverable on your `$PATH`.
 
 ```bash
-platformctl help
-platformctl doctor
-platformctl auth status
-platformctl fleet ls
-platformctl env bootstrap dev
-```
-
----
-
-## Build and Install
-
-```bash
-# From repo root
+# Build binaries
 go build -o ./bin/platformctl ./cmd/platformctl
-# Or install into GOPATH/bin
-go install ./cmd/platformctl
+go build -o ./bin/platformctl-sim ./cmd/platformctl-sim
+
+# Install (requires sudo)
+chmod +x install_system.sh
+./install_system.sh
 ```
 
-## Configuration (optional)
-
-Config is read from `~/.config/platformctl/config.yaml` (or `.yml` / `.json`).
-If missing, commands still run in unauthenticated mode.
-
-Example YAML:
-```yaml
-principal: demo-user
-scopes:
-  - fleet:read
-  - infra:write
-```
-
-## Manual Test Script
-
+### Local Build (Testing)
+If you prefer not to use sudo, you must add the `./bin` directory to your path manually:
 ```bash
-go build -o ./bin/platformctl ./cmd/platformctl
-
-# Help and doctor
-./bin/platformctl help
-./bin/platformctl doctor
-
-# Auth status (with or without config)
-./bin/platformctl auth status
-
-# Fleet listing (requires scope fleet:read)
-./bin/platformctl fleet ls
-
-# Env bootstrap dry-run (requires scope infra:write)
-./bin/platformctl env bootstrap dev
-
-# Plugin demo
-echo -e '#!/usr/bin/env bash\necho plugin works' > /tmp/platformctl-hello
-chmod +x /tmp/platformctl-hello
-PATH="/tmp:$PATH" ./bin/platformctl hello
+export PATH=$PWD/bin:$PATH
 ```
 
-## Automated UA Script
+---
 
-Run the bundled checks end-to-end (expects the binary at ./bin/platformctl):
+## Usage Guide
 
+### 1. Onboarding
+Start here to bootstrap your local environment and identity.
 ```bash
-go build -o ./bin/platformctl ./cmd/platformctl
-./scripts/ua.sh
+$ platformctl init
+```
+*Follow the interactive wizard to set your Principal and Scopes.*
+
+### 2. Verify Environment
+Check that dependencies (and plugins) are correctly answering.
+```bash
+$ platformctl doctor
 ```
 
-The script asserts help/doctor/auth/fleet/env flows, scope denials, plugin fallback, and reports PASS/FAIL.
+### 3. Fleet Management (Core Feature)
+Interact with the simulated robot fleet.
+```bash
+# List all devices
+$ platformctl fleet ls
 
-## Version
+# Check specific device status
+$ platformctl fleet status robot-001
 
-platformctl v1.0.0
+# View logs via simulated stream
+$ platformctl fleet logs robot-001
+
+# Open a secure tunnel (Mock SSH)
+$ platformctl fleet ssh robot-001
+```
+
+### 4. Simulations (Plugin Feature)
+This command is provided by the external `platformctl-sim` plugin.
+```bash
+# Submit a new simulation job
+$ platformctl sim run --scenario=warehouse_v2
+
+# List all jobs
+$ platformctl sim ls
+```
+
+### 5. Secrets Management
+Securely store local credentials (mocked Vault integration).
+```bash
+$ platformctl secrets set api_key "s3cr3t"
+$ platformctl secrets get api_key
+```
+
+---
+
+## Development
+
+### Running Tests
+The project includes an End-to-End (E2E) test suite that sets up an isolated environment:
+```bash
+./tests/e2e.sh
+```
+
+### Project Structure
+-   `cmd/platformctl`: Main entry point.
+-   `cmd/platformctl-sim`: Source for the simulation plugin.
+-   `internal/`: Shared libraries (Auth, Storage, Output).
+-   `tests/`: E2E verification scripts.
+
+---
 
 ## License
-
-MIT License © 2026 James Ward
-
-## Changelog
-
-See [CHANGELOG.md](CHANGELOG.md).
-
-## Roadmap / Next
-
-- Add richer doctor checks (network, PATH hints)
-- Add configurable output formats (json for scripts)
-- Ship install convenience (Makefile targets, possible brew tap)
+MIT License. See [LICENSE](./LICENSE) for details.

@@ -20,7 +20,9 @@ Built-in commands:
 	version                  Show CLI version
 	doctor                   Environment checks
 	auth status              Show mock auth status
-	fleet ls                 List devices (requires scope fleet:read)
+	fleet [cmd]              Manage robots (ls, status, logs, ssh)
+	secrets [cmd]            Manage secrets (ls, get, set)
+	init                     Run interactive setup
 	env bootstrap <env>      Dry-run infra bootstrap plan (requires scope infra:write)
 
 Plugins:

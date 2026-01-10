@@ -7,9 +7,13 @@ import (
 
 // Device represents a mock fleet device.
 type Device struct {
-	ID    string
-	Model string
-	State string
+	ID        string `json:"id"`
+	Model     string `json:"model"`
+	State     string `json:"state"`
+	IP        string `json:"ip"`
+	Battery   int    `json:"battery"`
+	Firmware  string `json:"firmware"`
+	LastSeen  string `json:"last_seen"` // ISO8601 string
 }
 
 // ListDevices returns mocked devices.
