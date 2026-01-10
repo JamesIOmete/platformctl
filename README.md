@@ -1,7 +1,5 @@
 # platformctl (V2)
 
-# platformctl (V2)
-
 > **Standardizes developer onboarding, service scaffolding, and day-to-day ops via a composable CLI.**
 
 **platformctl** is a proof-of-concept internal developer platform (IDP) tool. It demonstrates a scalable, decentralized architecture focusing on developer experience (DX), plugin extensibility, and secure self-service workflows.
