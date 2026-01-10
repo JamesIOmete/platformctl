@@ -1,9 +1,10 @@
 # platformctl (V2)
 
-**platformctl** is a proof-of-concept internal CLI demonstrating a scalable, decentralized platform engineering toolchain.
-It functionality simulates a Robotics Fleet Management system with a focus on developer experience (DX), plugin extensibility, and secure self-service workflows.
+# platformctl (V2)
 
-> **Status**: v1.1.0-dev (POC)
+> **Standardizes developer onboarding, service scaffolding, and day-to-day ops via a composable CLI.**
+
+**platformctl** is a proof-of-concept internal developer platform (IDP) tool. It demonstrates a scalable, decentralized architecture focusing on developer experience (DX), plugin extensibility, and secure self-service workflows.
 
 ---
 
@@ -14,13 +15,12 @@ This project demonstrates a **Hub-and-Spoke** CLI architecture designed for orga
 1.  **Core Binary (`platformctl`)**:
     -   Handles Identity (`auth`) and Onboarding (`init`).
     -   Manages local secrets (`secrets`).
-    -   Provides standardized libraries for standardized output and config.
     -   Dispatches subcommands to plugins.
 
 2.  **Decoupled Plugins (`platformctl-sim`)**:
-    -   The Simulation capability is a **standalone binary**.
-    -   This proves how distinct teams (e.g., "Sim Team") can release updates independently of the "Platform Team".
-    -   The core CLI discovers plugins via the system `$PATH`.
+    -   **Discovery Contract**: The core CLI searches the system `$PATH` for executables named `platformctl-<name>`.
+    -   **Execution**: Running `platformctl foo args...` invokes `platformctl-foo args...`.
+    -   **Independence**: Plugins are standalone binaries. This proves how distinct teams (e.g., "Sim Team") can release updates independently of the Platform Team.
 
 3.  **Mocked Backend**:
     -   State is persisted locally in `~/.config/platformctl/mock-state.json` to simulate real API interactions.
@@ -33,8 +33,15 @@ This project demonstrates a **Hub-and-Spoke** CLI architecture designed for orga
 -   Linux / WSL / macOS
 -   `go` 1.22+ (for building)
 
+### Quick Install (Go Users)
+Zero-sudo installation if you have Go installed:
+```bash
+go install github.com/JamesIOmete/platformctl/cmd/platformctl@latest
+go install github.com/JamesIOmete/platformctl/cmd/platformctl-sim@latest
+```
+
 ### System Install (Recommended)
-This installs binaries to `/usr/local/bin`, ensuring plugins are discoverable on your `$PATH`.
+This installs binaries to `/usr/local/bin`, ensuring plugins are discoverable on your `$PATH` for all users.
 
 ```bash
 # Build binaries

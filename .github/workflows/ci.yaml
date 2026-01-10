@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.22'
+
+    - name: Build Core
+      run: go build -v ./cmd/platformctl
+
+    - name: Build Plugin
+      run: go build -v ./cmd/platformctl-sim
+
+    - name: Run Tests
+      run: go test -v ./...
+
+    - name: Run E2E Script
+      run: |
+        # Build binaries to expected location for script
+        mkdir -p bin
+        go build -o ./bin/platformctl ./cmd/platformctl
+        go build -o ./bin/platformctl-sim ./cmd/platformctl-sim
+        
+        # Add bin to PATH so the test script finds plugins
+        export PATH=$PWD/bin:$PATH
+        
+        # Making sure script assumes interactive inputs correctly or adjust script if needed
+        # The script uses printf piping which works in CI
+        chmod +x tests/e2e.sh
+        ./tests/e2e.sh
