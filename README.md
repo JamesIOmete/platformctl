@@ -4,6 +4,16 @@
 
 **platformctl** is a proof-of-concept internal developer platform (IDP) tool. It demonstrates a scalable, decentralized architecture focusing on developer experience (DX), plugin extensibility, and secure self-service workflows.
 
+<!-- Quick visual demo -->
+![platformctl demo](docs/assets/demo.gif)
+
+> Prefer full-res video?  
+> [▶ Watch the MP4](https://github.com/JamesIOmete/platformctl/releases/latest/download/demo.mp4)
+
+_Recorded with `scripts/demo.sh`. Recreate locally with Asciinema + agg._
+
+---
+
 ---
 
 ## Architecture
