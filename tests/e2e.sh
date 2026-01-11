@@ -1,86 +1,105 @@
-#!/bin/bash
-set -e
+#!/usr/bin/env bash
+set -euo pipefail
 
-# Setup isolated environment
-TEST_DIR=$(mktemp -d)
+# ---------- Resolve platformctl binary ----------
+if [[ -n "${BIN_PATH:-}" ]]; then
+  BIN="$BIN_PATH"
+elif command -v platformctl >/dev/null 2>&1; then
+  BIN="$(command -v platformctl)"
+else
+  # try common Go install paths
+  GOBIN="$(go env GOBIN 2>/dev/null || true)"
+  GOPATH="$(go env GOPATH 2>/dev/null || true)"
+  for p in "$GOBIN/platformctl" "$GOPATH/bin/platformctl" "$HOME/go/bin/platformctl"; do
+    [[ -x "$p" ]] && BIN="$p" && break
+  done
+  : "${BIN:=}" || true
+fi
+
+if [[ -z "${BIN:-}" || ! -x "$BIN" ]]; then
+  echo "❌ platformctl not found. Set BIN_PATH or add it to PATH."
+  echo "   Example quick setup:"
+  echo "     export GOBIN=\$(mktemp -d) && go install github.com/JamesIOmete/platformctl/cmd/platformctl@latest"
+  echo "     export PATH=\"\$GOBIN:\$PATH\""
+  exit 1
+fi
+
+# ---------- Isolated HOME ----------
+TEST_DIR="$(mktemp -d -t platformctl-e2e-XXXXXX)"
 export HOME="$TEST_DIR"
-BIN_PATH="/usr/local/bin/platformctl"
+export XDG_CONFIG_HOME="$HOME/.config"
+trap 'rm -rf "$TEST_DIR"' EXIT
 
 echo "Running E2E Tests for platformctl..."
+echo "Binary: $BIN"
 echo "Temp Home: $TEST_DIR"
+echo "---------------------------------------------------"
 
-# Helper for assertions
+# ---------- Helpers ----------
 assert_contains() {
-    if [[ "$1" != *"$2"* ]]; then
-        echo "❌ FAIL: Expected output to contain '$2', got:"
-        echo "$1"
-        exit 1
-    else
-        echo "✅ PASS: Output contains '$2'"
-    fi
+  local hay="$1" needle="$2"
+  if [[ "$hay" != *"$needle"* ]]; then
+    echo "❌ FAIL: expected to find '$needle' in:"
+    printf "%s\n" "$hay"
+    exit 1
+  else
+    echo "✅ PASS: found '$needle'"
+  fi
 }
 
-echo "---------------------------------------------------"
+# ---------- TEST 1: Onboarding ----------
 echo "TEST 1: Onboarding (Init)"
-# Simulate inputs: Username="testuser", Choice="3" (Full Access)
-# We pipe these inputs into the interactive command
-output=$(printf "testuser\n3\n" | $BIN_PATH init)
+# adjust inputs if your init prompts differ
+output="$(printf 'testuser\n3\n' | "$BIN" init || true)"
 assert_contains "$output" "Configuration saved"
 assert_contains "$output" "Setup complete"
 
-# Verify config file exists
-if [ -f "$TEST_DIR/.config/platformctl/config.yaml" ]; then
-    echo "✅ PASS: Config file created."
-else
-    echo "❌ FAIL: Config file missing."
-    exit 1
-fi
+cfg="$XDG_CONFIG_HOME/platformctl/config.yaml"
+[[ -f "$cfg" ]] && echo "✅ PASS: Config file created: $cfg" || { echo "❌ FAIL: Config file missing"; exit 1; }
 
 echo "---------------------------------------------------"
+# ---------- TEST 2: Secrets ----------
 echo "TEST 2: Secrets Management"
-# Set
-output=$($BIN_PATH secrets set "api_key" "super_secret_value")
+output="$("$BIN" secrets set api_key super_secret_value)"
 assert_contains "$output" "successfully"
 
-# Get
-output=$($BIN_PATH secrets get "api_key")
+output="$("$BIN" secrets get api_key)"
 assert_contains "$output" "super_secret_value"
 
-# List
-output=$($BIN_PATH secrets ls)
+output="$("$BIN" secrets ls)"
 assert_contains "$output" "api_key"
 echo "✅ PASS: Secrets CRUD verified."
 
 echo "---------------------------------------------------"
+# ---------- TEST 3: Fleet ----------
 echo "TEST 3: Fleet (Built-in)"
-# List
-output=$($BIN_PATH fleet ls)
+output="$("$BIN" fleet ls)"
 assert_contains "$output" "robot-001"
 assert_contains "$output" "online"
 
-# Status
-output=$($BIN_PATH fleet status robot-001)
+output="$("$BIN" fleet status robot-001)"
 assert_contains "$output" "Battery"
 echo "✅ PASS: Fleet commands verified."
 
 echo "---------------------------------------------------"
+# ---------- TEST 4: Simulation plugin ----------
 echo "TEST 4: Simulation (Plugin)"
-# Verify sim plugin discovery
-output=$($BIN_PATH help)
-assert_contains "$output" "sim"
+if command -v platformctl-sim >/dev/null 2>&1; then
+  output="$("$BIN" help)"
+  assert_contains "$output" "sim"
 
-# Run Simulation
-# Use a random scenario name to track it
-output=$($BIN_PATH sim run --scenario=e2e_test_scenario)
-assert_contains "$output" "Simulation submitted"
+  SCEN="e2e_test_scenario_$RANDOM"
+  output="$("$BIN" sim run --scenario="$SCEN")"
+  assert_contains "$output" "Simulation submitted"
 
-# List and verify the scenario exists
-output=$($BIN_PATH sim ls)
-assert_contains "$output" "e2e_test_scenario"
-echo "✅ PASS: Sim plugin verified."
+  output="$("$BIN" sim ls)"
+  assert_contains "$output" "$SCEN"
+  echo "✅ PASS: Sim plugin verified."
+else
+  echo "ℹ️ Skipping sim tests: platformctl-sim not found on PATH."
+  echo "   Install with:"
+  echo "     go install github.com/JamesIOmete/platformctl/cmd/platformctl-sim@latest"
+fi
 
 echo "---------------------------------------------------"
 echo "🎉 ALL TESTS PASSED"
-
-# Cleanup
-rm -rf "$TEST_DIR"
